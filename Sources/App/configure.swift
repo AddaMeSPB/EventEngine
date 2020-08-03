@@ -32,23 +32,28 @@ public func configure(_ app: Application) throws {
 //            environment: .sandbox
 //        )
 //    #endif
-
-    #if os(Linux)
-        guard let connectionString = Environment.get("MONGO_DB_PRO") else {
-            fatalError("No MongoDB connection string is available in .env")
+    var connectionString: String
+    switch app.environment {
+    case .production:
+        guard let mongoURL = Environment.get("MONGO_DB_PRO") else {
+            fatalError("No MongoDB connection string is available in .env_production")
         }
-
-    #else
-        guard let connectionString = Environment.get("MONGO_DB_DEV") else {
-            fatalError("No MongoDB connection string is available in .env")
+        connectionString = mongoURL
+    case .development:
+        guard let mongoURL = Environment.get("MONGO_DB_DEV") else {
+            fatalError("No MongoDB connection string is available in .env_development")
         }
-
+        connectionString = mongoURL
         print("mongoURL: \(connectionString)")
-    #endif
+    default:
+        guard let mongoURL = Environment.get("MONGO_DB_DEV") else {
+            fatalError("No MongoDB connection string is available in .env_development")
+        }
+        connectionString = mongoURL
+        print("mongoURL: \(connectionString)")
+    }
 
     try app.initializeMongoDB(connectionString: connectionString)
-
-
     try app.databases.use(.mongo(
         connectionString: connectionString
     ), as: .mongo)
@@ -57,6 +62,7 @@ public func configure(_ app: Application) throws {
     guard let jwksString = Environment.process.JWKS else {
         fatalError("No value was found at the given public key environment 'JWKS'")
     }
+    try app.jwt.signers.use(jwksJSON: jwksString)
 
     // Encoder & Decoder
     let encoder = JSONEncoder()
@@ -70,6 +76,7 @@ public func configure(_ app: Application) throws {
     #if os(Linux)
     #else
         app.http.server.configuration.hostname = "0.0.0.0"
+        app.http.server.configuration.port = 9090
     #endif
 
     try routes(app)

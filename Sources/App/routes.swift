@@ -13,6 +13,6 @@ func routes(_ app: Application) throws {
     try app.group("v1") { api in
         let events = api.grouped("events")
         let eventsAuth = events.grouped(JWTMiddleware())
-        try events.register(collection: EventController() )
+        try eventsAuth.register(collection: EventController() )
     }
 }
