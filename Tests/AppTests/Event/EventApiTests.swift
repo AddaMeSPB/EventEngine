@@ -32,7 +32,8 @@ final class EventApiTests: AppTestCase {
         }
 
 
-        let eventsBody = Events(conversationsId: ObjectId(), name: "Walk with son", duration: 9000, geoId: ObjectId(), categories: "sports", ownerID: ObjectId())
+        let eventsBody =
+            Events(conversationsId: ObjectId(), name: "Walk with son", duration: 9000, geoId: ObjectId(), categories: "sports", ownerID: ObjectId())
         try eventsBody.save(on: app.db)
 
         try app.test(.POST, "/v1/events", headers: headers, content: eventsBody) { res in
@@ -40,8 +41,7 @@ final class EventApiTests: AppTestCase {
             let contentType = try XCTUnwrap(res.headers.contentType)
             XCTAssertEqual(contentType, .json)
             XCTAssertContent(Events.self, res) { content in
-                    XCTAssertEqual(content.name, eventsBody.name)
-
+                XCTAssertEqual(content.name, eventsBody.name)
             }
         }
 

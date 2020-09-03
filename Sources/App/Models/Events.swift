@@ -53,8 +53,9 @@ final class Events: Model, Content {
     init() {}
 
     @ID(custom: "id") var id: ObjectId?
-    @Field(key: "conversations_id") var conversationsId: ObjectId
+    @Field(key: "conversations_id") var conversationsId: ObjectId?
     @Field(key: "name") var name: String
+    @OptionalField(key: "image_url") var imageUrl: String?
     @Field(key: "duration") var duration: Int
     @Field(key: "categories") var categories: String
     @Field(key: "geo_id") var geoId: ObjectId?
@@ -66,6 +67,7 @@ final class Events: Model, Content {
 
     enum CodingKeys: String, CodingKey {
         case id, name, duration
+        case imageUrl = "image_url"
         case conversationsId = "conversations_id"
         case geo_id = "geo_id"
         case owner_id = "owner_id"
@@ -74,9 +76,18 @@ final class Events: Model, Content {
         case deletedAt = "deleted_at"
     }
 
-    init(conversationsId: ObjectId, name: String, duration: Int, geoId: ObjectId?, categories: String, ownerID: ObjectId?) {
+    init(
+        conversationsId: ObjectId? = nil,
+        name: String,
+        imageUrl: String? = nil,
+        duration: Int,
+        geoId: ObjectId? = nil,
+        categories: String,
+        ownerID: ObjectId? = nil
+    ) {
         self.conversationsId = conversationsId
         self.name = name
+        self.imageUrl = imageUrl
         self.duration = duration
         self.categories = categories
         self.geoId = geoId
@@ -88,9 +99,10 @@ final class Events: Model, Content {
     }
 
     struct Res {
-        var id: ObjectId?
-        var conversations_id: ObjectId
+        var id: String
+        var conversations_id: ObjectId?
         var name: String
+        var image_url: String?
         var duration: Int
         var categories: String
         var geo_id: ObjectId?
@@ -100,9 +112,16 @@ final class Events: Model, Content {
         var deletedAt: Date?
 
         init(_ event: Events) {
-            self.id = event.id
+            
+            if event.id == nil {
+                self.id = ObjectId().hexString
+            } else {
+                self.id = event.id!.hexString
+            }
+
             self.conversations_id = event.conversationsId
             self.name = event.name
+            self.image_url = event.imageUrl
             self.duration = event.duration
             self.categories = event.categories
             self.geo_id = event.geoId

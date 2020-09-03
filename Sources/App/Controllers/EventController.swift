@@ -15,7 +15,7 @@ extension EventController: RouteCollection {
         routes.post(use: create)
         routes.get(use: readAll)
         routes.get(":events_id", use: read)
-        routes.put(":events_id", use: update)
+        routes.put(use: update)
         routes.delete(":events_id", use: delete)
     }
 }
@@ -44,7 +44,7 @@ final class EventController {
         }
 
         return Events.query(on: req.db)
-            .filter(\.$ownerID == req.payload.userId)
+            //.filter(\.$ownerID == req.payload.userId)
             .all().map { $0 }
     }
 
@@ -72,8 +72,8 @@ final class EventController {
 
         let origianlEvents = try req.content.decode(Events.self)
 
-        guard let _id = req.parameters.get("\(Events.schema)_id"), let id = ObjectId(_id) else {
-            return req.eventLoop.makeFailedFuture(Abort(.notFound))
+        guard let id = origianlEvents.id else {
+            return req.eventLoop.makeFailedFuture(Abort(.notFound, reason: "Event id missing"))
         }
 
         // only owner can delete
