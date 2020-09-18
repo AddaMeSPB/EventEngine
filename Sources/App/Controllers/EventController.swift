@@ -22,11 +22,11 @@ extension EventController: RouteCollection {
 
 final class EventController {
 
-    private func create(_ req: Request) throws -> EventLoopFuture<Events> {
+    private func create(_ req: Request) throws -> EventLoopFuture<Event> {
         if req.loggedIn == false {
             throw Abort(.unauthorized)
         }
-        let content = try req.content.decode(Events.self)
+        let content = try req.content.decode(Event.self)
         content.ownerID = req.payload.userId
         //Events.init(conversationsId: ObjectId(), name: "Walk with son", duration: 36000, geoId: ObjectId(), categories: "sports", ownerID: req.payload.userId)
         return content.save(on: req.db).map { content }
@@ -38,26 +38,26 @@ final class EventController {
 //        return collection.insertEncoded(event).map { _ in event }
     }
 
-    private func readAll(_ req: Request) throws -> EventLoopFuture<[Events]>  {
+    private func readAll(_ req: Request) throws -> EventLoopFuture<[Event]>  {
         if req.loggedIn == false {
             throw Abort(.unauthorized)
         }
 
-        return Events.query(on: req.db)
+        return Event.query(on: req.db)
             //.filter(\.$ownerID == req.payload.userId)
             .all().map { $0 }
     }
 
-    private func read(_ req: Request) throws -> EventLoopFuture<Events> {
+    private func read(_ req: Request) throws -> EventLoopFuture<Event> {
         if req.loggedIn == false {
             throw Abort(.unauthorized)
         }
 
-        guard let _id = req.parameters.get("\(Events.schema)_id"), let id = ObjectId(_id) else {
+        guard let _id = req.parameters.get("\(Event.schema)_id"), let id = ObjectId(_id) else {
             return req.eventLoop.makeFailedFuture(Abort(.notFound))
         }
 
-        return Events.query(on: req.db)
+        return Event.query(on: req.db)
             .filter(\.$id == id)
             .filter(\.$ownerID == req.payload.userId)
             .first()
@@ -65,19 +65,19 @@ final class EventController {
 
     }
 
-    private func update(_ req: Request) throws -> EventLoopFuture<Events> {
+    private func update(_ req: Request) throws -> EventLoopFuture<Event> {
         if req.loggedIn == false {
             throw Abort(.unauthorized)
         }
 
-        let origianlEvents = try req.content.decode(Events.self)
+        let origianlEvents = try req.content.decode(Event.self)
 
         guard let id = origianlEvents.id else {
             return req.eventLoop.makeFailedFuture(Abort(.notFound, reason: "Event id missing"))
         }
 
         // only owner can delete
-        return Events.query(on: req.db)
+        return Event.query(on: req.db)
             .filter(\.$id == id)
             .filter(\.$ownerID == req.payload.userId)
             .first()
@@ -103,11 +103,11 @@ final class EventController {
             throw Abort(.unauthorized)
         }
 
-        guard let _id = req.parameters.get("\(Events.schema)_id"), let id = ObjectId(_id) else {
+        guard let _id = req.parameters.get("\(Event.schema)_id"), let id = ObjectId(_id) else {
             return req.eventLoop.makeFailedFuture(Abort(.notFound))
         }
 
-        return Events.query(on: req.db)
+        return Event.query(on: req.db)
             .filter(\.$id == id)
             .filter(\.$ownerID == req.payload.userId)
             .first()

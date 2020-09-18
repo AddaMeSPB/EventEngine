@@ -47,7 +47,7 @@ import Vapor
 import Fluent
 import FluentMongoDriver
 
-final class Events: Model, Content {
+final class Event: Model, Content {
     static var schema = "events"
 
     init() {}
@@ -58,7 +58,8 @@ final class Events: Model, Content {
     @OptionalField(key: "image_url") var imageUrl: String?
     @Field(key: "duration") var duration: Int
     @Field(key: "categories") var categories: String
-    @Field(key: "geo_id") var geoId: ObjectId?
+
+    @Children(for: \.$event) var geolocations: [GeoLocation]    
     @Field(key: "owner_id") var ownerID: ObjectId?
 
     @Timestamp(key: "created_at", on: .create) var createdAt: Date?
@@ -81,7 +82,6 @@ final class Events: Model, Content {
         name: String,
         imageUrl: String? = nil,
         duration: Int,
-        geoId: ObjectId? = nil,
         categories: String,
         ownerID: ObjectId? = nil
     ) {
@@ -90,7 +90,6 @@ final class Events: Model, Content {
         self.imageUrl = imageUrl
         self.duration = duration
         self.categories = categories
-        self.geoId = geoId
         self.ownerID = ownerID
     }
 
@@ -105,13 +104,12 @@ final class Events: Model, Content {
         var image_url: String?
         var duration: Int
         var categories: String
-        var geo_id: ObjectId?
         var owner_id: ObjectId?
         var createdAt: Date?
         var updatedAt: Date?
         var deletedAt: Date?
 
-        init(_ event: Events) {
+        init(_ event: Event) {
             
             if event.id == nil {
                 self.id = ObjectId().hexString
@@ -124,7 +122,6 @@ final class Events: Model, Content {
             self.image_url = event.imageUrl
             self.duration = event.duration
             self.categories = event.categories
-            self.geo_id = event.geoId
             self.owner_id = event.ownerID
             self.createdAt = event.createdAt
             self.updatedAt = event.updatedAt
