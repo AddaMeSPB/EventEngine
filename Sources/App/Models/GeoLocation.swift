@@ -27,7 +27,7 @@ final class GeoLocation: Model {
     @Field(key: "address_name") var addressName: String
     @Field(key: "type") var geoType: GeoType
     @Field(key: "coordinates") var coordinates: [Double]
-    @Parent(key: "eventID") var event: Event
+    @Parent(key: "event_id") var event: Event
 
     @Timestamp(key: "created_at", on: .create) var createdAt: Date?
     @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
@@ -54,18 +54,11 @@ extension GeoLocation: Content {
         var id: String
         var eventID: ObjectId
         var addressName: String
-        var geoType: GeoType
+        var type: GeoType
         var coordinates: [Double]
         var createdAt: Date?
         var updatedAt: Date?
         var deletedAt: Date?
-        
-        enum CodingKeys: String, CodingKey {
-            case id, coordinates
-            case eventID = "event_id"
-            case geoType = "type"
-            case addressName = "address_name"
-        }
 
         init(_ geoLocation: GeoLocation) {
 
@@ -77,7 +70,7 @@ extension GeoLocation: Content {
 
             self.eventID = geoLocation.$event.id
             self.addressName = geoLocation.addressName
-            self.geoType = geoLocation.geoType
+            self.type = geoLocation.geoType
             self.coordinates = geoLocation.coordinates
             self.createdAt = geoLocation.createdAt
             self.updatedAt = geoLocation.updatedAt
