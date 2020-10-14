@@ -116,7 +116,7 @@ final class EventController {
             .filter(\.$id == id)
             .filter(\.$owner.$id == req.payload.userId)
             .first()
-            .unwrap(or: Abort(.notFound, reason: "No Events. found!"))
+            .unwrap(or: Abort(.notFound, reason: "No Events. found! by ID: \(id)"))
             .flatMap { event in
                 origianlEvents.id = event.id
                 origianlEvents._$id.exists = true
