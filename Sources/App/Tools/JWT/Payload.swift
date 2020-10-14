@@ -36,4 +36,7 @@ struct Payload: JWTPayload {
         let expiration = Date(timeIntervalSince1970: Double(self.exp))
         try ExpirationClaim(value: expiration).verifyNotExpired()
     }
+
 }
+
+

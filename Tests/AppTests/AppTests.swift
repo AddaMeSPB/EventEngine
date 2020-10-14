@@ -1,5 +1,6 @@
 @testable import App
 import XCTVapor
+import AddaAPIGatewayModels
 
 final class AppTests: XCTestCase {
     func testHelloWorld() throws {

@@ -7,8 +7,7 @@
 
 @testable import App
 import XCTVapor
-import Fluent
-import FluentMongoDriver
+import AddaAPIGatewayModels
 
 final class EventApiTests: AppTestCase {
     func testCreateEvent() throws {
