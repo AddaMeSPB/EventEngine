@@ -55,7 +55,9 @@ final class EventController {
 
         return Event.query(on: req.db)
             .with(\.$owner)
-            .with(\.$conversation)
+            .with(\.$conversation) {
+                $0.with(\.$admins).with(\.$members)
+            }
             .with(\.$geolocations)
             .sort(\.$createdAt, .descending)
             .paginate(for: req)
