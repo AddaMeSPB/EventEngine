@@ -15,16 +15,17 @@ extension GeoLocationController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         routes.post(use: create)
         routes.get(use: readAll) // "users", ":users_id",
-//        routes.get(":geo_locations_id", use: read)
+//        routes.get(":geolocationsId", use: read)
 //        routes.put(":events_id", use: update)
-//        routes.delete(":geo_locations_id", use: delete)
+//        routes.delete(":geolocationsId", use: delete)
     }
 }
 
 class GeoLocationController {
     private func create(_ req: Request) throws -> EventLoopFuture<GeoLocation.Item> {
         if req.loggedIn == false { throw Abort(.unauthorized) }
-        let content = try req.content.decode(GeoLocation.self)
+        let data = try req.content.decode(GeoLocation.Create.self)
+        let content = GeoLocation.init(addressName: data.addressName, coordinates: data.coordinates, geoType: data.type, eventID: data.eventId)
         return content.save(on: req.db).map { content.response }
     }
 
@@ -117,3 +118,4 @@ class GeoLocationController {
             .map { .ok }
     }
 }
+
