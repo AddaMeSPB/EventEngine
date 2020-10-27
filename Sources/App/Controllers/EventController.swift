@@ -17,7 +17,7 @@ extension EventController: RouteCollection {
         routes.get(use: readAll)
         routes.get("my", use: readOwnerEvents)
         routes.put(use: update)
-        routes.delete(":events_id", use: delete)
+        routes.delete(":eventsId", use: delete)
     }
 }
 
@@ -92,14 +92,23 @@ final class EventController {
 //        }
 //      }
 
-    private func readOwnerEvents(_ req: Request) throws -> EventLoopFuture<[Event]> {
+    private func readOwnerEvents(_ req: Request) throws -> EventLoopFuture<Page<Event.Item>> {
         if req.loggedIn == false {
             throw Abort(.unauthorized)
         }
         
         return Event.query(on: req.db)
             .filter(\.$owner.$id == req.payload.userId)
-            .all()
+            .with(\.$owner)
+            .with(\.$conversation) {
+                $0.with(\.$admins).with(\.$members)
+            }
+            .with(\.$geolocations)
+            .sort(\.$createdAt, .descending)
+            .paginate(for: req)
+            .map { (event: Page<Event>) -> Page<Event.Item> in
+                return event.map { $0.response }
+            }
     }
 
     private func update(_ req: Request) throws -> EventLoopFuture<Event> {
