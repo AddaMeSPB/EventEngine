@@ -9,9 +9,9 @@ let package = Package(
     dependencies: [
         // 💧 A server-side Swift web framework.
         .package(url: "https://github.com/vapor/vapor.git", from: "4.32.0"),
-        .package(url: "https://github.com/AddaMeSPB/AddaAPIGatewayModels.git", from: "1.0.3"),
+        .package(url: "https://github.com/AddaMeSPB/AddaAPIGatewayModels.git", from: "1.0.17"),
         .package(url: "https://github.com/vapor/jwt.git", from: "4.0.0"),
-        .package(url: "https://github.com/vapor/apns.git", from: "1.0.0-rc.1.1")
+        .package(url: "https://github.com/vapor/apns.git", from: "1.0.0")
     ],
     targets: [
         .target(

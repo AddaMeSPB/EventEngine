@@ -112,3 +112,5 @@ iOSInjectionProject/
 
 .env
 .env_test
+docker-compose.production.yml
+production.Dockerfile

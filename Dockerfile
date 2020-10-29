@@ -38,4 +38,4 @@ USER vapor:vapor
 
 # Start the Vapor service when the image is run, default to listening on 8080 in production environment 
 ENTRYPOINT ["./Run"]
-CMD ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
+CMD ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "9090"]
