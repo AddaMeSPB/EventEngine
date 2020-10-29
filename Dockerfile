@@ -39,7 +39,7 @@ COPY --from=build --chown=vapor:vapor /build/.build/release /app
 # Copy dotenv files
 COPY --from=build --chown=vapor:vapor /build/.env.production /app/.env.production
 COPY --from=build --chown=vapor:vapor /build/.env.development /app/.env.development
-COPY --from=build --chown=vapor:vapor /build/.env.testing /app/.env.testing
+COPY --from=build --chown=vapor:vapor /build/.env.test /app/.env.test
 
 # Ensure all further commands run as the vapor user
 USER vapor:vapor
