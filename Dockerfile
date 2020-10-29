@@ -26,7 +26,7 @@ FROM swift:5.2-bionic-slim
 RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app vapor
 
 ARG env
-ENV env ${env:-production}
+ENV env
 
 # Switch to the new home directory
 WORKDIR /app
@@ -46,5 +46,5 @@ USER vapor:vapor
 
 # Start the Vapor service when the image is run, default to listening on 8080 in production environment 
 ENTRYPOINT ["./Run"]
-CMD ["serve", "--env", "$env", "--hostname", "0.0.0.0", "--port", "9090"]
+CMD ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "9090"]
 

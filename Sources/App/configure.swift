@@ -9,24 +9,28 @@ public func configure(_ app: Application) throws {
     // uncomment to serve files from /Public folder
 
     var connectionString: String
+    
+    debugPrint("\(app.environment)")
+    
     switch app.environment {
     case .production:
         guard let mongoURL = Environment.get("MONGO_DB_PRO") else {
-            fatalError("No MongoDB connection string is available in .env_production")
+            fatalError("No MongoDB connection string is available in .env.production")
         }
         connectionString = mongoURL
     case .development:
         guard let mongoURL = Environment.get("MONGO_DB_DEV") else {
-            fatalError("No MongoDB connection string is available in .env_development")
+            fatalError("\(#line) No MongoDB connection string is available in .env.development")
         }
         connectionString = mongoURL
-        print("mongoURL: \(connectionString)")
+        print("\(#line) mongoURL: \(connectionString)")
+
     default:
         guard let mongoURL = Environment.get("MONGO_DB_DEV") else {
-            fatalError("No MongoDB connection string is available in .env_development")
+            fatalError("No MongoDB connection string is available in .env.development")
         }
         connectionString = mongoURL
-        print("mongoURL: \(connectionString)")
+        print("\(#line) mongoURL: \(connectionString)")
     }
 
     try app.initializeMongoDB(connectionString: connectionString)
