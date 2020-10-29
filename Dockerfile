@@ -15,7 +15,7 @@ RUN swift package resolve
 COPY . .
 
 # Compile with optimizations
-RUN swift build --enable-test-discovery -c release
+RUN swift build --enable-test-discovery -c release nano
 
 # ================================
 # Run image
@@ -24,6 +24,9 @@ FROM swift:5.2-bionic-slim
 
 # Create a vapor user and group with /app as its home directory
 RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app vapor
+
+ARG env
+ENV env ${env:-production}
 
 # Switch to the new home directory
 WORKDIR /app
@@ -38,4 +41,4 @@ USER vapor:vapor
 
 # Start the Vapor service when the image is run, default to listening on 8080 in production environment 
 ENTRYPOINT ["./Run"]
-CMD ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "9090"]
+CMD ["serve", "--env", "$env", "--hostname", "0.0.0.0", "--port", "9090"]
