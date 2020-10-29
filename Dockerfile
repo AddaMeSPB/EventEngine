@@ -25,8 +25,8 @@ FROM swift:5.2-bionic-slim
 # Create a vapor user and group with /app as its home directory
 RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app vapor
 
-ARG env
-ENV env
+#ARG env
+#ENV env ${env:-production}
 
 # Switch to the new home directory
 WORKDIR /app
