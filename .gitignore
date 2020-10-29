@@ -114,3 +114,4 @@ iOSInjectionProject/
 .env_test
 docker-compose.production.yml
 production.Dockerfile
+.env.production.org

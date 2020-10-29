@@ -36,9 +36,15 @@ COPY --from=build --chown=vapor:vapor /build/.build/release /app
 # Uncomment the next line if you need to load resources from the `Public` directory
 #COPY --from=build --chown=vapor:vapor /build/Public /app/Public
 
+# Copy dotenv files
+COPY --from=build --chown=vapor:vapor /build/.env.production /app/.env.production
+COPY --from=build --chown=vapor:vapor /build/.env.development /app/.env.development
+COPY --from=build --chown=vapor:vapor /build/.env.testing /app/.env.testing
+
 # Ensure all further commands run as the vapor user
 USER vapor:vapor
 
 # Start the Vapor service when the image is run, default to listening on 8080 in production environment 
 ENTRYPOINT ["./Run"]
 CMD ["serve", "--env", "$env", "--hostname", "0.0.0.0", "--port", "9090"]
+
