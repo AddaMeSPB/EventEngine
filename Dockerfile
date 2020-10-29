@@ -15,7 +15,7 @@ RUN swift package resolve
 COPY . .
 
 # Compile with optimizations
-RUN swift build --enable-test-discovery -c release nano
+RUN swift build --enable-test-discovery -c release
 
 # ================================
 # Run image
