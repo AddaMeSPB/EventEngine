@@ -110,7 +110,7 @@ iOSInjectionProject/
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 
-.env
+
 .env_test
 docker-compose.production.yml
 production.Dockerfile
