@@ -21,7 +21,7 @@ x-shared_environment: &shared_environment
 
 services:
   app:
-    image: event_engine:latest
+    image: addamespb/event_engine:latest
     build:
       context: .
     environment:
