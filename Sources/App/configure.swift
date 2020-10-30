@@ -55,7 +55,7 @@ public func configure(_ app: Application) throws {
 
     // Configure custom hostname.
     if app.environment == .production {
-        app.http.server.configuration.hostname = "127.0.0.1"
+        app.http.server.configuration.hostname = "0.0.0.0"
         app.http.server.configuration.port = 9090
     } else if app.environment == .development {
         app.http.server.configuration.hostname = "0.0.0.0"
