@@ -58,7 +58,7 @@ final class EventController {
             .with(\.$conversation) {
                 $0.with(\.$admins).with(\.$members)
             }
-            .with(\.$geolocations)
+            .with(\.$eventPlaces)
             .sort(\.$createdAt, .descending)
             .paginate(for: req)
             .map { (event: Page<Event>) -> Page<Event.Item> in
@@ -103,7 +103,7 @@ final class EventController {
             .with(\.$conversation) {
                 $0.with(\.$admins).with(\.$members)
             }
-            .with(\.$geolocations)
+            .with(\.$eventPlaces)
             .sort(\.$createdAt, .descending)
             .paginate(for: req)
             .map { (event: Page<Event>) -> Page<Event.Item> in
