@@ -32,9 +32,9 @@ final class EventController {
         let content = try req.content.decode(CUEvent.self)
         let ownerID = req.payload.userId
 
-        let conversation = Conversation(title: content.name)
-        return try conversation.save(on: req.db).flatMap { _ in
-            conversation.addUser(userId: ownerID, req: req)
+        let conversation = Conversation(title: content.name, type: .group)
+        return conversation.save(on: req.db).flatMap { _ in
+            conversation.addUserAsAMemberAndAdmin(userId: ownerID, req: req)
             
             guard let conversationID = conversation.id else {
                 return req.eventLoop.makeFailedFuture(Abort(.notFound))
