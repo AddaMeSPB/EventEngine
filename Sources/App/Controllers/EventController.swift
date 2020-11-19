@@ -149,7 +149,7 @@ final class EventController {
             throw Abort(.unauthorized)
         }
 
-        guard let _id = req.parameters.get("\(Event.schema)_id"), let id = ObjectId(_id) else {
+        guard let _id = req.parameters.get("\(Event.schema)Id"), let id = ObjectId(_id) else {
             return req.eventLoop.makeFailedFuture(Abort(.notFound))
         }
 
