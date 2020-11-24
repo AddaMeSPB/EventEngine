@@ -40,38 +40,54 @@ final class EventController {
                 return req.eventLoop.makeFailedFuture(Abort(.notFound))
             }
             
-            let data = Event(name: content.name, imageUrl: content.imageUrl, duration: content.duration, categories: content.categories, isActive: content.isActive, ownerId: ownerID, conversationId: conversationID)
-            return data.save(on: req.db).map { data }
+          let data = Event(content: content, ownerID: ownerID, conversationID: conversationID)
+          return data.save(on: req.db).map { data }
 
         }
         
     }
 
-    // EventLoopFuture<[Event]>
-    private func readAll(_ req: Request) throws -> EventLoopFuture<Page<Event.Item>> {
-        if req.loggedIn == false {
-            throw Abort(.unauthorized)
+  private func readAll(_ req: Request) throws -> EventLoopFuture<EventPage> {
+        if req.loggedIn == false { throw Abort(.unauthorized) }
+
+      let coordinates: Document = [ [30.387906785397426, 60.01087797211564],  0.008226198370569168]
+      let query: Document = [
+        "coordinates": [
+          "$geoWithin": [
+            "$centerSphere": coordinates
+          ]
+        ]
+      ]
+      
+      let db = req.mongoDB
+      let events = db[Event.schema]
+      let page = try req.query.decode(PageRequest.self)
+      let numberOfItems =
+        events
+        .aggregate([.
+          geoNear(
+            longitude: 30.387906785397426,
+            latitude: 60.01087797211564,
+            distanceField: "0.008226198370569168",
+            spherical: false
+          ),
+          .count(to: "name")]
+        ).count()
+    
+      return numberOfItems.flatMap { count -> EventLoopFuture<EventPage> in
+        let allResults = events
+          .find(query)
+          .skip(page.per * (page.page - 1))
+          .limit(page.per)
+          .decode(Event.Item.self)
+          .allResults()
+        
+        return allResults.map { results in
+          let meta = PageMetadata(page: page.page, per: page.per, total: count)
+          let page = EventPage(items: results, metadata: meta)
+          return page
         }
-
-        return Event.query(on: req.db)
-            .with(\.$owner)
-            .with(\.$conversation) {
-                $0.with(\.$admins).with(\.$members)
-            }
-            .with(\.$eventPlaces)
-            .sort(\.$createdAt, .descending)
-            .paginate(for: req)
-            .map { (event: Page<Event>) -> Page<Event.Item> in
-                return event.map { $0.response }
-            }
-
-//        return Event.query(on: req.db)
-//            .sort(\.$createdAt, .descending)
-//            .paginate(for: req)
-//            .map { (original: Page<Event>) -> Page<Event.Res> in
-//                original.map { $0.response }
-//            }
-
+      }
     }
     
 //    func home(_ req: Request) throws -> EventLoopFuture<Page<RestaurantCategoryModel.Home>> {
@@ -99,11 +115,9 @@ final class EventController {
         
         return Event.query(on: req.db)
             .filter(\.$owner.$id == req.payload.userId)
-            .with(\.$owner)
             .with(\.$conversation) {
                 $0.with(\.$admins).with(\.$members)
             }
-            .with(\.$eventPlaces)
             .sort(\.$createdAt, .descending)
             .paginate(for: req)
             .map { (event: Page<Event>) -> Page<Event.Item> in
@@ -163,3 +177,44 @@ final class EventController {
     }
 
 }
+
+//private func readAll(_ req: Request) throws -> EventLoopFuture<PageE> {
+//  if req.loggedIn == false { throw Abort(.unauthorized) }
+//  let coordinates: Document = [ [30.387906785397426, 60.01087797211564],  0.008226198370569168]
+//  let query: Document = [
+//    "coordinates": [
+//      "$geoWithin": [
+//        "$centerSphere": coordinates
+//      ]
+//    ]
+//  ]
+//  let db = req.mongoDB
+//  let events = db[Event.schema]
+//  let page = try req.query.decode(PageRequest.self)
+//  let numberOfItems =
+//    events
+//    .aggregate([.
+//                  geoNear(
+//                    longitude: 30.387906785397426,
+//                    latitude: 60.01087797211564,
+//                    distanceField: "0.008226198370569168",
+//                    spherical: false
+//                  ),
+//                .count(to: "_id")]
+//    ).count()
+//  
+//  return numberOfItems.flatMap { count -> EventLoopFuture<PageE> in
+//    let allResults = events
+//      .find(query)
+//      .skip(page.per * (page.page - 1))
+//      .limit(page.per)
+//      .decode(Event.Item.self)
+//      .allResults()
+//    
+//    return allResults.map { results in
+//      let meta = PageMetadata(page: page.page, per: page.per, total: count)
+//      let page = PageE(items: results, metadata: meta)
+//      return page
+//    }
+//  }
+//}
