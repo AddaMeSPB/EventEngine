@@ -14,10 +14,6 @@ func routes(_ app: Application) throws {
         let events = api.grouped("events")
         let eventsAuth = events.grouped(JWTMiddleware())
         try eventsAuth.register(collection: EventController() )
-                
-        let geoLocations = api.grouped("eventplaces")
-        let geoLocationsAuth = geoLocations.grouped(JWTMiddleware())
-        try geoLocationsAuth.register(collection: EventPlaceController())
 
     }
 }
