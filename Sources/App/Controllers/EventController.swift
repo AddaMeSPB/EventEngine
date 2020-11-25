@@ -83,8 +83,9 @@ final class EventController {
           .allResults()
         
         return allResults.map { results in
+          let newResults = results.map { $0.recreateEventWithSwapCoordinatesForMongoDB }
           let meta = PageMetadata(page: page.page, per: page.per, total: count)
-          let page = EventPage(items: results, metadata: meta)
+          let page = EventPage(items: newResults, metadata: meta)
           return page
         }
       }
