@@ -48,9 +48,14 @@ final class EventController {
     }
 
   private func readAll(_ req: Request) throws -> EventLoopFuture<EventPage> {
-        if req.loggedIn == false { throw Abort(.unauthorized) }
+      if req.loggedIn == false { throw Abort(.unauthorized) }
 
-      let coordinates: Document = [ [30.387906785397426, 60.01087797211564],  0.008226198370569168]
+    let page = try req.query.decode(EventPageRequest.self)
+    let distance = Double(page.distance) / 6378.1
+//    3963.2 is radius of earth in Miles.
+//    6378.1 is radius of earth in Km.
+    
+    let coordinates: Document = [ [page.long, page.lat],  distance]
       let query: Document = [
         "coordinates": [
           "$geoWithin": [
@@ -61,14 +66,13 @@ final class EventController {
       
       let db = req.mongoDB
       let events = db[Event.schema]
-      let page = try req.query.decode(PageRequest.self)
-      let numberOfItems =
-        events
+      
+      let numberOfItems = events
         .aggregate([.
           geoNear(
-            longitude: 30.387906785397426,
-            latitude: 60.01087797211564,
-            distanceField: "0.008226198370569168",
+            longitude: page.long,
+            latitude: page.lat,
+            distanceField: "\(distance)",
             spherical: false
           ),
           .count(to: "name")]
@@ -122,7 +126,7 @@ final class EventController {
             .sort(\.$createdAt, .descending)
             .paginate(for: req)
             .map { (event: Page<Event>) -> Page<Event.Item> in
-                return event.map { $0.response }
+              return event.map { $0.response.recreateEventWithSwapCoordinatesForMongoDB }
             }
     }
 
