@@ -25,9 +25,7 @@ final class EventController {
 
     private func create(_ req: Request) throws -> EventLoopFuture<Event> {
         
-        if req.loggedIn == false {
-            throw Abort(.unauthorized)
-        }
+        if req.loggedIn == false { throw Abort(.unauthorized) }
         
         let content = try req.content.decode(CUEvent.self)
         let ownerID = req.payload.userId
@@ -36,11 +34,11 @@ final class EventController {
         return conversation.save(on: req.db).flatMap { _ in
             conversation.addUserAsAMemberAndAdmin(userId: ownerID, req: req)
             
-            guard let conversationID = conversation.id else {
+            guard let conversationsID = conversation.id else {
                 return req.eventLoop.makeFailedFuture(Abort(.notFound))
             }
             
-          let data = Event(content: content, ownerID: ownerID, conversationID: conversationID)
+          let data = Event(content: content, ownerID: ownerID, conversationsID: conversationsID)
           return data.save(on: req.db).map { data }
 
         }
