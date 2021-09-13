@@ -45,71 +45,55 @@ final class EventController {
         
     }
 
-  private func readAll(_ req: Request) throws -> EventLoopFuture<EventPage> {
-      if req.loggedIn == false { throw Abort(.unauthorized) }
+    private func readAll(_ req: Request) throws -> EventLoopFuture<EventPage> {
 
-    let page = try req.query.decode(EventPageRequest.self)
-    let distance = Double(page.distance) / 6378.1
-//    3963.2 is radius of earth in Miles.
-//    6378.1 is radius of earth in Km.
-    
-    let coordinates: Document = [ [page.long, page.lat],  distance]
-      let query: Document = [
-        "coordinates": [
-          "$geoWithin": [
-            "$centerSphere": coordinates
-          ]
-        ]
-      ]
-      
-      let db = req.mongoDB
-      let events = db[Event.schema]
-      
+      if req.loggedIn == false { throw Abort(.unauthorized) }
+      let page = try req.query.decode(EventPageRequest.self)
+      let skipItems = page.per * (page.page - 1)
+
+      // The equatorial radius of the Earth is
+      // approximately 3,963.2 miles or 6,378.1 kilometers.
+
+      let maxDistanceInMiles = Double(page.distance)
+
+      let events = req.mongoDB[Event.schema]
+
       let numberOfItems = events
         .aggregate([.
           geoNear(
             longitude: page.long,
             latitude: page.lat,
-            distanceField: "\(distance)",
-            spherical: false
-          ),
-          .count(to: "name")]
+            distanceField: "distance",
+            spherical: true,
+            maxDistance: maxDistanceInMiles
+          )]
         ).count()
-    
+
+      let eventsPipeline = events
+        .aggregate([.
+          geoNear(
+            longitude: page.long,
+            latitude: page.lat,
+            distanceField: "distance",
+            spherical: true,
+            maxDistance: maxDistanceInMiles
+          ),
+          sort(["distance": .ascending, "createdAt": .descending]),
+          skip(skipItems),
+          limit(page.per)
+        ])
+
       return numberOfItems.flatMap { count -> EventLoopFuture<EventPage> in
-        let allResults = events
-          .find(query)
-          .skip(page.per * (page.page - 1))
-          .limit(page.per)
-          .decode(Event.Item.self)
+        return eventsPipeline.decode(Event.Item.self)
           .allResults()
-        
-        return allResults.map { results in
-          let newResults = results.map { $0.recreateEventWithSwapCoordinatesForMongoDB }
-          let meta = PageMetadata(page: page.page, per: page.per, total: count)
-          let page = EventPage(items: newResults, metadata: meta)
-          return page
+          .map { results in
+            let newResults = results.map { $0.recreateEventWithSwapCoordinatesForMongoDB }
+            let meta = PageMetadata(page: page.page, per: page.per, total: count)
+            let page = EventPage(items: newResults, metadata: meta)
+            return page
+          }
         }
       }
-    }
-    
-//    func home(_ req: Request) throws -> EventLoopFuture<Page<RestaurantCategoryModel.Home>> {
-//        guard let user = req.auth.get(UserModel.self) else { throw Abort(.unauthorized) }
-//        return RestaurantCategoryModel.query(on: req.db)
-//    .with(\.$restaurants).paginate(for: req)
-//    .map { paginatedCateogries -> Page<RestaurantCategoryModel.Home> in
-//          paginatedCateogries.map { category -> RestaurantCategoryModel.Home in
-//            return .init(id: category.id?.uuidString ?? "NONE", title: category.title, restaurants: category.restaurants.map {
-//              var listContent = $0.listContent
-//              let xDist = user.longitude - $0.longitude
-//              let yDist = user.latitude - $0.latitude
-//              let distance = sqrt(xDist * xDist + yDist * yDist)
-//              listContent.distance = "\(distance) km"
-//              return listContent
-//            })
-//          }
-//        }
-//      }
 
     private func readOwnerEvents(_ req: Request) throws -> EventLoopFuture<Page<Event.Item>> {
         if req.loggedIn == false {
@@ -181,43 +165,57 @@ final class EventController {
 
 }
 
-//private func readAll(_ req: Request) throws -> EventLoopFuture<PageE> {
-//  if req.loggedIn == false { throw Abort(.unauthorized) }
-//  let coordinates: Document = [ [30.387906785397426, 60.01087797211564],  0.008226198370569168]
-//  let query: Document = [
-//    "coordinates": [
-//      "$geoWithin": [
-//        "$centerSphere": coordinates
-//      ]
-//    ]
-//  ]
-//  let db = req.mongoDB
-//  let events = db[Event.schema]
-//  let page = try req.query.decode(PageRequest.self)
-//  let numberOfItems =
-//    events
-//    .aggregate([.
-//                  geoNear(
-//                    longitude: 30.387906785397426,
-//                    latitude: 60.01087797211564,
-//                    distanceField: "0.008226198370569168",
-//                    spherical: false
-//                  ),
-//                .count(to: "_id")]
-//    ).count()
-//  
-//  return numberOfItems.flatMap { count -> EventLoopFuture<PageE> in
-//    let allResults = events
-//      .find(query)
-//      .skip(page.per * (page.page - 1))
-//      .limit(page.per)
-//      .decode(Event.Item.self)
-//      .allResults()
-//    
-//    return allResults.map { results in
-//      let meta = PageMetadata(page: page.page, per: page.per, total: count)
-//      let page = PageE(items: results, metadata: meta)
-//      return page
-//    }
-//  }
-//}
+public struct Item: Content {
+  public init(_id: ObjectId? = nil, name: String, details: String? = nil, imageUrl: String? = nil, duration: Int, isActive: Bool, conversationsId: ObjectId, categories: String, addressName: String, sponsored: Bool? = nil, overlay: Bool? = nil, type: GeoType, coordinates: [Double], distance: Double? = nil, updatedAt: Date?, createdAt: Date?, deletedAt: Date?) {
+    self._id = _id
+    self.name = name
+    self.details = details
+    self.imageUrl = imageUrl
+    self.duration = duration
+    self.isActive = isActive
+    self.conversationsId = conversationsId
+    self.categories = categories
+    self.addressName = addressName
+    self.sponsored = sponsored
+    self.overlay = overlay
+    self.type = type
+    self.coordinates = coordinates
+    self.distance = distance
+    self.updatedAt = updatedAt
+    self.createdAt = createdAt
+    self.deletedAt = deletedAt
+  }
+
+  public var recreateEventWithSwapCoordinatesForMongoDB: Item {
+    .init(
+      _id: _id, name: name, details: details, imageUrl: imageUrl,
+      duration: duration, isActive: isActive, conversationsId: conversationsId,
+      categories: categories, addressName: addressName, sponsored: sponsored,
+      overlay: overlay, type: type, coordinates: swapCoordinatesForMongoDB(),
+      distance: distance, updatedAt: updatedAt,
+      createdAt: createdAt, deletedAt: deletedAt
+    )
+  }
+
+  public var _id: ObjectId?
+  public var name: String
+  public var details: String?
+  public var imageUrl: String?
+  public var duration: Int
+  public var isActive: Bool
+  public var categories: String
+  public var conversationsId: ObjectId
+
+  // Place Information
+  public var addressName: String
+  public var sponsored: Bool?
+  public var overlay: Bool?
+  public var type: GeoType
+  public var coordinates: [Double]
+  public var distance: Double?
+  public let updatedAt, createdAt, deletedAt: Date?
+
+  public func swapCoordinatesForMongoDB() -> [Double] {
+    return [coordinates[1], coordinates[0]]
+  }
+}
