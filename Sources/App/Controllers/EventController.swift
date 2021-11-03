@@ -23,7 +23,7 @@ extension EventController: RouteCollection {
 
 final class EventController {
 
-    private func create(_ req: Request) throws -> EventLoopFuture<Event> {
+  private func create(_ req: Request) throws -> EventLoopFuture<Event.Item> {
         
         if req.loggedIn == false { throw Abort(.unauthorized) }
         
@@ -39,7 +39,8 @@ final class EventController {
             }
             
           let data = Event(content: content, ownerID: ownerID, conversationsID: conversationsID)
-          return data.save(on: req.db).map { data }
+          return data.save(on: req.db).map { data.response.recreateEventWithSwapCoordinatesForMongoDB
+          }
 
         }
         

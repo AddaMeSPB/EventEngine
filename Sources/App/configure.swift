@@ -11,7 +11,7 @@ public func configure(_ app: Application) throws {
     var connectionString: String
     
     debugPrint("\(app.environment)")
-    debugPrint(Environment.get("MONGO_DB_PRO"))
+    debugPrint(Environment.get("MONGO_DB_PRO") as Any)
     
     switch app.environment {
     case .production:
