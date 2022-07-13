@@ -1,0 +1,108 @@
+version: '3.9'
+
+x-shared_environment: &shared_environment
+  LOG_LEVEL: ${LOG_LEVEL:-debug}
+  JWKS: "${JWKS_TESTING}"
+  MONGO_DB_STAGE: "${MONGO_DB_TESTING}"
+  EVENTS_URL: "${EVENTS_URL_TESTING}"
+  CHATS_URL: "${CHATS_URL_TESTING}"
+  AUTH_URL: "${AUTH_URL_TESTING}"
+
+  # Common
+  TWILIO_ACCOUNT_ID: "${TWILIO_ACCOUNT_ID}"
+  TWILIO_ACCOUNT_SECRET: "${TWILIO_ACCOUNT_SECRET}"
+  SENDER_NUMBER: "${SENDER_NUMBER}"
+  APNS_KEY_ID: "${APNS_KEY_ID}"
+  APNS_PRIVATE_KEY: "${APNS_PRIVATE_KEY}"
+  APNS_TEAM_ID: "${APNS_TEAM_ID}"
+  APNS_TOPIC: "${APNS_TOPIC}"
+
+services:
+  mongo:
+    image: mongo:5.0.3
+    volumes:
+      - ./mongodb/data:/data/db
+    networks:
+      - production_gateway
+    restart: unless-stopped
+
+  chat:
+    image: addamespb/chat_engine:latest
+    container_name: achat
+    build:
+      context: chatEngine
+    environment:
+      <<: *shared_environment
+    ports:
+      - 6061:6060
+    command: ["serve", "--env", "testing", "--hostname", "0.0.0.0", "--port", "6061"]
+    volumes:
+      - ~/addame/chatEngine_data_testing:/chat_data_testing
+    depends_on:
+      - mongo
+    links:
+      - mongo
+    networks:
+      - stage_gateway
+    restart: always
+
+  event:
+    image: addamespb/event_engine:latest
+    container_name: aevent
+    build:
+      context: eventEngine
+    environment:
+      <<: *shared_environment
+    ports:
+      - '9091:9090'
+    command: ["serve", "--env", "testing", "--hostname", "0.0.0.0", "--port", "9091"]
+    volumes:
+      - ~/addame/eventEngine_data_testing:/event_data_testing
+    depends_on:
+      - mongo
+    networks:
+      - stage_gateway
+    links:
+      - mongo
+    restart: always
+
+  auth:
+    image: addamespb/addame_auth:latest
+    container_name: aauth
+    build:
+      context: addameAuth
+    environment:
+      <<: *shared_environment
+    ports:
+      - '3031:3030'
+    command: ["serve", "--env", "testing", "--hostname", "0.0.0.0", "--port", "3031"]
+    volumes:
+      - ~/addame/authEngine_data_testing:/auth_data_testing
+    depends_on:
+      - mongo
+    networks:
+      - stage_gateway
+    links:
+      - mongo
+    restart: always
+
+  api_gateway:
+    image: addamespb/addaapi_gateway:latest
+    container_name: agateway
+    build:
+      context: addameapiGateway
+    environment:
+      <<: *shared_environment
+    ports:
+      - '80:8081'
+      - '443:8081'
+    command: ["serve", "--env", "staging", "--hostname", "0.0.0.0", "--port", "8081"]
+    volumes:
+      - ~/addame/gateway_data_testing:/gateway_data_testing
+    networks:
+      - stage_gateway
+    restart: always
+
+networks:
+  stage_gateway:
+    name: Default

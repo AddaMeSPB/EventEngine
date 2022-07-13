@@ -1,0 +1,113 @@
+# Docker Compose file for Vapor
+#
+# Install Docker on your system to run and test
+# your Vapor app in a production-like environment.
+#
+# Note: This file is intended for testing and does not
+# implement best practices for a production deployment.
+#
+# Learn more: https://docs.docker.com/compose/reference/
+#
+#   Build images: docker-compose build
+#      Start app: docker-compose up app
+#       Stop all: docker-compose down
+#
+version: '3.9'
+
+x-shared_environment: &shared_environment
+  LOG_LEVEL: ${LOG_LEVEL:-debug}
+  JWKS: "${JWKS_DEV}"
+  MONGO_DB_DEV: "${MONGO_DB_DEV}"
+  EVENTS_URL: "${EVENTS_URL_DEV}"
+  CHATS_URL: "${CHATS_URL_DEV}"
+  AUTH_URL: "${AUTH_URL_DEV}"
+
+  # Common
+  TWILIO_ACCOUNT_ID: "${TWILIO_ACCOUNT_ID}"
+  TWILIO_ACCOUNT_SECRET: "${TWILIO_ACCOUNT_SECRET}"
+  SENDER_NUMBER: "${SENDER_NUMBER}"
+  APNS_KEY_ID: "${APNS_KEY_ID}"
+  APNS_PRIVATE_KEY: "${APNS_PRIVATE_KEY}"
+  APNS_TEAM_ID: "${APNS_TEAM_ID}"
+  APNS_TOPIC: "${APNS_TOPIC}"
+
+services:
+  mongo:
+    image: mongo:5.0.3
+    volumes:
+      - ./mongodb/data:/data/db
+    networks:
+      - production_gateway
+    restart: unless-stopped
+
+  chat:
+    image: addamespb/chat_engine:latest
+    container_name: achat
+    environment:
+      <<: *shared_environment
+    ports:
+      - 6060:6060
+    command: ["serve", "--env", "development", "--hostname", "0.0.0.0", "--port", "6060"]
+    volumes:
+      - ~/chatEngine:/chat_data
+    depends_on:
+      - mongo
+    links:
+      - mongo
+    networks:
+      - production_gateway
+    restart: always
+  event:
+    image: addamespb/event_engine:latest
+    container_name: aevent
+    environment:
+      <<: *shared_environment
+    ports:
+      - '9090:9090'
+    command: ["serve", "--env", "development", "--hostname", "0.0.0.0", "--port", "9090"]
+    volumes:
+      - ~/eventEngine:/event_data
+    depends_on:
+      - mongo
+    networks:
+      - production_gateway
+    links:
+      - mongo
+    restart: always
+
+  auth:
+    image: addamespb/addame_auth:latest
+    container_name: aauth
+    environment:
+      <<: *shared_environment
+    ports:
+      - '3030:3030'
+    command: ["serve", "--env", "development", "--hostname", "0.0.0.0", "--port", "3030"]
+    volumes:
+      - ~/addameAuth:/auth_data
+    depends_on:
+      - mongo
+    networks:
+      - production_gateway
+    links:
+      - mongo
+    restart: always
+
+  api_gateway:
+    image: addamespb/addaapi_gateway:latest
+    container_name: agateway
+    environment:
+      <<: *shared_environment
+    ports:
+      - '80:8080'
+      - '443:8080'
+    command: ["serve", "--env", "development", "--hostname", "0.0.0.0", "--port", "8080"]
+    volumes:
+      - ~/addameapiGateway:/gateway_data
+    networks:
+      - production_gateway
+    restart: always
+
+networks:
+  production_gateway:
+    name: Default

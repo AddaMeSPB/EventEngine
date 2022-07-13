@@ -9,7 +9,7 @@ import Vapor
 import MongoKitten
 import Fluent
 import JWT
-import AddaAPIGatewayModels
+import AddaSharedModels
 
 extension EventController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {

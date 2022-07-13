@@ -1,0 +1,113 @@
+version: '3.9'
+
+x-shared_environment: &shared_environment
+  LOG_LEVEL: ${LOG_LEVEL:-debug}
+  JWKS: "${JWKS_STAGE}"
+  MONGO_DB_STAGE: "${MONGO_DB_STAGE}"
+  EVENTS_URL: "${EVENTS_URL_STAGE}"
+  CHATS_URL: "${CHATS_URL_STAGE}"
+  AUTH_URL: "${AUTH_URL_STAGE}"
+
+  # Common
+  TWILIO_ACCOUNT_ID: "${TWILIO_ACCOUNT_ID}"
+  TWILIO_ACCOUNT_SECRET: "${TWILIO_ACCOUNT_SECRET}"
+  SENDER_NUMBER: "${SENDER_NUMBER}"
+  APNS_KEY_ID: "${APNS_KEY_ID}"
+  APNS_PRIVATE_KEY: "${APNS_PRIVATE_KEY}"
+  APNS_TEAM_ID: "${APNS_TEAM_ID}"
+  APNS_TOPIC: "${APNS_TOPIC}"
+
+services:
+  mongo:
+    image: mongo:5.0.3
+    container_name: addame_mongodb
+    volumes:
+      #- ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./docker-entrypoint-initdb.d/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./mongodb/data_stage:/data/db_stage
+    environment:
+      MONGO_INITDB_DATABASE: addame_api_stage
+    networks:
+      - stage_gateway
+    restart: unless-stopped
+
+  chat:
+    image: addamespb/chat_engine:latest
+    container_name: achat
+    build:
+      context: chatEngine
+    environment:
+      <<: *shared_environment
+    ports:
+      - 6061:6060
+    command: ["serve", "--env", "staging", "--hostname", "0.0.0.0", "--port", "6061"]
+    volumes:
+      - ~/addame/chatEngine_data_stage:/chat_data_stage
+    depends_on:
+      - mongo
+    links:
+      - mongo
+    networks:
+      - stage_gateway
+    restart: always
+
+  event:
+    image: addamespb/event_engine:latest
+    container_name: aevent
+    build:
+      context: eventEngine
+    environment:
+      <<: *shared_environment
+    ports:
+      - '9091:9090'
+    command: ["serve", "--env", "staging", "--hostname", "0.0.0.0", "--port", "9091"]
+    volumes:
+      - ~/addame/eventEngine_data_stage:/event_data_stage
+    depends_on:
+      - mongo
+    networks:
+      - stage_gateway
+    links:
+      - mongo
+    restart: always
+
+  auth:
+    image: addamespb/addame_auth:latest
+    container_name: aauth
+    build:
+      context: addameAuth
+    environment:
+      <<: *shared_environment
+    ports:
+      - '3031:3030'
+    command: ["serve", "--env", "staging", "--hostname", "0.0.0.0", "--port", "3031"]
+    volumes:
+      - ~/addame/authEngine_data_stage:/auth_data_stage
+    depends_on:
+      - mongo
+    networks:
+      - stage_gateway
+    links:
+      - mongo
+    restart: always
+
+  api_gateway:
+    image: addamespb/addaapi_gateway:latest
+    container_name: agateway
+    build:
+      context: addameapiGateway
+    environment:
+      <<: *shared_environment
+    ports:
+      - '80:8081'
+      - '443:8081'
+    command: ["serve", "--env", "staging", "--hostname", "0.0.0.0", "--port", "8081"]
+    volumes:
+      - ~/addame/gateway_data_stage:/gateway_data_stage
+    networks:
+      - stage_gateway
+    restart: always
+
+networks:
+  stage_gateway:
+    name: Default
