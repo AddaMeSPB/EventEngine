@@ -3,6 +3,25 @@ import FluentMongoDriver
 import Vapor
 import APNS
 import JWTKit
+import VaporRouting
+import AddaSharedModels
+
+// Route
+enum SiteRouterKey: StorageKey {
+    typealias Value = AnyParserPrinter<URLRequestData, SiteRoute>
+}
+
+extension Application {
+    var router: SiteRouterKey.Value {
+        get {
+            self.storage[SiteRouterKey.self]!
+        }
+        set {
+            self.storage[SiteRouterKey.self] = newValue
+        }
+    }
+}
+
 
 // configures your application
 public func configure(_ app: Application) throws {
@@ -68,25 +87,39 @@ public func configure(_ app: Application) throws {
     decoder.dateDecodingStrategy = .iso8601
     ContentConfiguration.global.use(decoder: decoder, for: .json)
 
+    let host = "0.0.0.0"
+    var port = 9090
     // Configure custom hostname.
     switch app.environment {
     case .production:
       app.http.server.configuration.hostname = "0.0.0.0"
       app.http.server.configuration.port = 9090
+       port = 9090
     case .staging:
       app.http.server.configuration.port = 9091
       app.http.server.configuration.hostname = "0.0.0.0"
+        port = 9091
     case .development:
       app.http.server.configuration.port = 9090
       app.http.server.configuration.hostname = "0.0.0.0"
+        port = 9090
     case .testing:
       app.http.server.configuration.port = 9092
       app.http.server.configuration.hostname = "0.0.0.0"
+        port = 9092
     default:
       app.http.server.configuration.port = 9090
       app.http.server.configuration.hostname = "0.0.0.0"
+        port = 9090
     }
 
     try routes(app)
+    let baseURL = "http://\(host):\(port)"
+    
+    app.router = router
+        .baseURL(baseURL)
+        .eraseToAnyParserPrinter()
+    
+    app.mount(app.router, use: siteHandler)
 
 }
