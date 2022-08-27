@@ -31,3 +31,11 @@ extension String {
       return String(unicodeScalars.filter { allowedCharacterSet.contains($0) })
     }
 }
+
+extension String {
+    static func random(length: Int) -> String {
+        let letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+"
+        return String((0..<length).map{ _ in letters.randomElement()! })
+    }
+}
+

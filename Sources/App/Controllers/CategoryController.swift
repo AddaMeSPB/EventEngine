@@ -79,14 +79,14 @@ import AddaSharedModels
 public func categoriesHandler(request: Request, route: CategoriesRoute) async throws -> AsyncResponseEncodable {
     switch route {
     case .create:
-        if request.loggedIn == false { throw Abort(.unauthorized) }
+//        if request.loggedIn == false { throw Abort(.unauthorized) }
         let input = try request.content.decode(CreateCategory.self)
         let category = Category(name: input.name)
         try await category.save(on: request.db)
         return category.response
 
     case .list:
-        if request.loggedIn == false { throw Abort(.unauthorized) }
+//        if request.loggedIn == false { throw Abort(.unauthorized) }
         let categories = try await Category.query(on: request.db).all()
         let response = categories.map { $0.response }
         return CategoriesResponse(

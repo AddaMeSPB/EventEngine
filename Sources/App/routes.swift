@@ -25,14 +25,12 @@ public func siteHandler(
     route: SiteRoute
 ) async throws -> AsyncResponseEncodable {
     switch route {
-    case .aboutUs:
-        return [String: String]()
-    case .contactUs:
-        return [String: String]()
-    case .home:
-        return [String: String]()
     case .eventEngine(let route):
         return try await eventEngineHandler(request: request, route: route)
+    case .chatEngine:
+        return Response(status: .badRequest)
+    case .authEngine:
+        return Response(status: .badRequest)
     }
 }
 

@@ -22,62 +22,26 @@ extension Application {
     }
 }
 
-
-// configures your application
 public func configure(_ app: Application) throws {
     // uncomment to serve files from /Public folder
 
-    var connectionString: String
+    var connectionString: String = ""
     
     debugPrint("\(app.environment)")
     debugPrint(Environment.get("MONGO_DB_\(app.environment.name.uppercased())_URL") as Any)
     
-    switch app.environment {
-    case .production:
-        guard let mongoURL = Environment.get("MONGO_DB_PRO") else {
-            fatalError("No MongoDB connection string is available in .env.production")
-        }
-        connectionString = mongoURL
-
-    case .development:
-        guard let mongoURL = Environment.get("MONGO_DB_DEV") else {
-            fatalError("\(#line) No MongoDB connection string is available in .env.development")
-        }
-        connectionString = mongoURL
-        print("\(#line) mongoURL: \(connectionString)")
-
-    case .staging:
-        guard let mongoURL = Environment.get("MONGO_DB_STAGING") else {
-            fatalError("\(#line) No MongoDB connection string is available in .env.development")
-        }
-        connectionString = mongoURL
-        print("\(#line) mongoURL: \(connectionString)")
-
-    case .testing:
-        guard let mongoURL = Environment.get("MONGO_DB_TEST") else {
-            fatalError("\(#line) No MongoDB connection string is available in .env.development")
-        }
-        connectionString = mongoURL
-        print("\(#line) mongoURL: \(connectionString)")
-
-    default:
-        guard let mongoURL = Environment.get("MONGO_DB_DEV") else {
-            fatalError("No MongoDB connection string is available in .env.development")
-        }
-        connectionString = mongoURL
-        print("\(#line) mongoURL: \(connectionString)")
-    }
+    app.middleware.use(JWTMiddleware())
+    
+    app.setupDatabaseConnections(&connectionString)
 
     try app.initializeMongoDB(connectionString: connectionString)
     try app.databases.use(.mongo(
         connectionString: connectionString
     ), as: .mongo)
-
-
-    guard let jwksString = Environment.process.JWKS else {
-        fatalError("No value was found at the given public key environment 'JWKS'")
-    }
-    try app.jwt.signers.use(jwksJSON: jwksString)
+    
+    // Add HMAC with SHA-256 signer.
+    let jwtSecret = Environment.get("JWT_SECRET") ?? String.random(length: 64)
+    app.jwt.signers.use(.hs256(key: jwtSecret))
 
     // Encoder & Decoder
     let encoder = JSONEncoder()
@@ -116,7 +80,7 @@ public func configure(_ app: Application) throws {
     try routes(app)
     let baseURL = "http://\(host):\(port)"
     
-    app.router = router
+    app.router = siteRouter
         .baseURL(baseURL)
         .eraseToAnyParserPrinter()
     
